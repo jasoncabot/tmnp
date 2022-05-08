@@ -14,6 +14,7 @@ export class GameScene extends Phaser.Scene {
   private parrot: Phaser.Physics.Arcade.Sprite;
   private helicopters: Phaser.GameObjects.Group;
   private shotEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
+  shh: Phaser.Sound.BaseSound;
 
   constructor() {
     super(sceneConfig);
@@ -32,8 +33,9 @@ export class GameScene extends Phaser.Scene {
     let scaleY = this.cameras.main.height / background.height
     background.setScale(Math.max(scaleX, scaleY)).setScrollFactor(0)
 
-    this.parrot = this.physics.add.sprite(getGameWidth(this) / 2, getGameHeight(this) / 2, 'birds').play('flapup');
+    this.parrot = this.physics.add.sprite(getGameWidth(this) / 2, getGameHeight(this) / 2, 'birds').setFrame(51);
     this.parrot.setCollideWorldBounds(true, 1, 1);
+    this.parrot.setGravity(0, 50);
 
     this.helicopters = this.add.group();
     for (let i = 0; i <= 9; i++) {
@@ -43,8 +45,14 @@ export class GameScene extends Phaser.Scene {
       this.helicopters.add(helicopter);
     }
 
+    const tank = this.physics.add.sprite(0, getGameHeight(this), 'tank').setOrigin(0.5, 1);
+    tank.setCollideWorldBounds(true, 1, 1);
+    tank.setVelocity(100, 0);
+
     this.physics.add.collider(this.parrot, this.helicopters);
     this.physics.add.collider(this.helicopters, this.helicopters);
+
+    this.shh = this.sound.add('shh', { loop: true, volume: 0.1 });
 
     const shotManager = this.add.particles('ice-blast');
     shotManager.setDepth(1);
@@ -64,6 +72,7 @@ export class GameScene extends Phaser.Scene {
             let hit = false;
             this.helicopters.children.entries.forEach((obj: any) => {
               if (obj.body.hitTest(x, y)) {
+                this.sound.play('boom');
                 hit = true;
                 obj.destroy();
               }
@@ -79,9 +88,17 @@ export class GameScene extends Phaser.Scene {
     this.cursorKeys = this.input.keyboard.createCursorKeys();
     this.input.keyboard.on('keydown-SPACE', () => {
       this.shotEmitter.start();
+      this.shh.play();
     }, this);
     this.input.keyboard.on('keyup-SPACE', () => {
       this.shotEmitter.stop();
+      this.shh.stop();
+    }, this);
+    this.input.keyboard.on('keydown-UP', () => {
+      this.parrot.play('flapup');
+    }, this);
+    this.input.keyboard.on('keyup-UP', () => {
+      this.parrot.stopAfterRepeat(0);
     }, this);
   }
 
@@ -106,7 +123,7 @@ export class GameScene extends Phaser.Scene {
     this.shotEmitter.setEmitterAngle({ min: this.parrot.angle - 93, max: this.parrot.angle - 87 });
 
     // Don't allow us to fly over the speed limit!
-    const speedLimit = 170;
+    const speedLimit = 100;
     if (this.parrot.body.velocity.lengthSq() > speedLimit * speedLimit) {
       this.parrot.body.velocity.setLength(speedLimit);
     }
