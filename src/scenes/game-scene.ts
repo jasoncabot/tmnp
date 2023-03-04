@@ -14,13 +14,16 @@ export class GameScene extends Phaser.Scene {
   private parrot: Phaser.Physics.Arcade.Sprite;
   private helicopters: Phaser.GameObjects.Group;
   private shotEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
-  shh: Phaser.Sound.BaseSound;
+  private shh: Phaser.Sound.BaseSound;
+  private level: number;
 
   constructor() {
     super(sceneConfig);
   }
 
-  public create(): void {
+  public create(data: any): void {
+    this.level = data.level || 1;
+
     this.anims.create({
       key: 'flapup',
       frames: this.anims.generateFrameNumbers('birds', { start: 51, end: 53, first: 0 }),
@@ -38,21 +41,63 @@ export class GameScene extends Phaser.Scene {
     this.parrot.setGravity(0, 50);
 
     this.helicopters = this.add.group();
-    for (let i = 0; i <= 9; i++) {
-      const helicopter = this.physics.add.sprite(Phaser.Math.Between(0, getGameWidth(this)), Phaser.Math.Between(0, getGameHeight(this)), 'helicopter');
+    for (let i = 0; i <= (8 + (this.level * Phaser.Math.Between(0, 3))); i++) {
+      const sprite = ['helicopter', 'spitfire'][Phaser.Math.Between(0, 1)];
+      const helicopter = this.physics.add.sprite(Phaser.Math.Between(0, getGameWidth(this)), Phaser.Math.Between(0, getGameHeight(this)), sprite);
       helicopter.setCollideWorldBounds(true, 1, 1);
-      helicopter.setVelocity(Phaser.Math.Between(0, 100), Phaser.Math.Between(0, 100));
+      helicopter.setVelocity(Phaser.Math.Between(0, (100 * this.level)), Phaser.Math.Between(0, (100 * this.level)));
       this.helicopters.add(helicopter);
     }
 
-    const tank = this.physics.add.sprite(0, getGameHeight(this), 'tank').setOrigin(0.5, 1);
-    tank.setCollideWorldBounds(true, 1, 1);
-    tank.setVelocity(100, 0);
+    const tanks = [
+      this.physics.add.sprite(Phaser.Math.Between(0, getGameWidth(this)), getGameHeight(this), 'tank').setOrigin(0.5, 1),
+      this.physics.add.sprite(Phaser.Math.Between(0, getGameWidth(this)), getGameHeight(this), 'tank').setOrigin(0.5, 1)
+    ];
+    tanks.forEach(x => {
+      x.setCollideWorldBounds(true, 1, 1);
+      x.setVelocity((100 * this.level), 0);
+    });
+
+    const levelText = this.add.text(getGameWidth(this) / 2, getGameHeight(this) / 2, `Level ${this.level}`)
+      .setOrigin(0.5, 0.5)
+      .setColor("#e26700")
+      .setFontSize(56);
+    this.tweens.add({
+      targets: levelText,
+      alpha: 0,
+      duration: 3000,
+      ease: 'cubic.out'
+    });
+
+
 
     this.physics.add.collider(this.parrot, this.helicopters);
     this.physics.add.collider(this.helicopters, this.helicopters);
 
     this.shh = this.sound.add('shh', { loop: true, volume: 0.1 });
+
+    const toTest = this.helicopters.children.entries.concat(tanks);
+
+    const checkForLevelComplete = () => {
+      for (let i = 0; i < toTest.length; i++) {
+        if (toTest[i].active) return;
+      }
+
+      this.scene.restart({ level: this.level + 1 });
+    }
+
+    const hitByIceBlast = (x, y) => {
+      return (obj: any) => {
+        if (obj && obj.body && obj.body.hitTest(x, y)) {
+          this.sound.play('boom');
+          obj.destroy();
+          checkForLevelComplete();
+          return true;
+        }
+        return false;
+      }
+    }
+
 
     const shotManager = this.add.particles('ice-blast');
     shotManager.setDepth(1);
@@ -69,16 +114,13 @@ export class GameScene extends Phaser.Scene {
         type: 'onEnter',
         source: {
           contains: (x: number, y: number) => {
-            let hit = false;
-            this.helicopters.children.entries.forEach((obj: any) => {
-              if (obj.body.hitTest(x, y)) {
-                this.sound.play('boom');
-                hit = true;
-                obj.destroy();
-              }
-            })
+            const hits = toTest.map(hitByIceBlast(x, y));
 
-            return hit;
+            for (let i = 0; i < hits.length; i++) {
+              if (hits[i]) return true;
+            }
+
+            return false;
           }
         }
       }

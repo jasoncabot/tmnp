@@ -73,6 +73,7 @@ export class BootScene extends Phaser.Scene {
     // Load sample assets
     this.load.spritesheet('birds', 'assets/sprites/birds.png', { frameWidth: 48, frameHeight: 48 });
     this.load.image('helicopter', 'assets/sprites/helicopter.png');
+    this.load.image('spitfire', 'assets/sprites/spitfire.png');
     this.load.image('ice-blast', 'assets/sprites/ice-blast.png');
     this.load.image('tank', 'assets/sprites/tank.png');
     this.load.image('background', 'assets/background/jungle.jpg');
