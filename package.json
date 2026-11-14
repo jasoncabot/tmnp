@@ -1,35 +1,34 @@
 {
-  "name": "sample-phaser3-typescript-project",
-  "version": "1.0.1",
-  "description": "A sample project using Phaser 3 and TypeScript",
-  "main": "src/main.ts",
+  "name": "tmnp",
+  "version": "2.0.0",
+  "description": "A Phaser game built with TypeScript, Vite and Cloudflare Workers static assets",
   "author": "Joe Bustamante",
   "license": "MIT",
-  "private": false,
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
   "scripts": {
-    "build": "yarn build:dev",
-    "build:dev": "NODE_ENV=development webpack",
-    "build:prod": "NODE_ENV=production webpack",
-    "dev": "NODE_ENV=development webpack-dev-server --open false",
-    "prod": "NODE_ENV=production webpack-dev-server",
-    "lint": "eslint src"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
-    "phaser": "^3.50.0"
+    "phaser": "^4.2.1"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^3.0.2",
-    "@typescript-eslint/parser": "^3.0.2",
-    "copy-webpack-plugin": "^6.0.2",
-    "eslint": "^7.1.0",
-    "eslint-config-prettier": "^6.11.0",
-    "eslint-plugin-prettier": "^3.1.3",
-    "prettier": "^2.0.5",
-    "ts-loader": "^7.0.5",
-    "typescript": "^4.1.3",
-    "typescript-tslint-plugin": "^0.5.5",
-    "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.11",
-    "webpack-dev-server": "^3.11.0"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.7",
+    "prettier": "^3.10.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
+    "wrangler": "^4.162.0"
   }
 }
