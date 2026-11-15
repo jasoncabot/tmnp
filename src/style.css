@@ -1,0 +1,706 @@
+:root {
+  --ink: #10240f;
+  --leaf: #7ed321;
+  --leaf-dark: #2f6b1f;
+  --bandana: #d8262c;
+  --gold: #ff9a1f;
+  --ice: #9ff3ff;
+  --paper: #fff8e6;
+  --display: 'Bungee', 'Impact', system-ui, sans-serif;
+  --ui: 'Space Grotesk Variable', system-ui, sans-serif;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #14301d;
+  color: var(--paper);
+  font-family: var(--ui);
+  /* No scrolling, zooming, text selection or callouts while playing on touch screens. */
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app,
+#stage,
+#touch,
+#ui {
+  position: fixed;
+  inset: 0;
+}
+
+#stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The input layer sits over the canvas and receives mouse and touch input. */
+#touch {
+  touch-action: none;
+}
+
+#ui {
+  pointer-events: none;
+}
+#ui button,
+#ui .screen.visible {
+  pointer-events: auto;
+}
+
+/* ---------------------------------------------------------------- loading */
+
+#loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 1rem;
+  text-align: center;
+  background: #14301d;
+  font-family: var(--display);
+  font-size: 1.4rem;
+  transition: opacity 0.6s;
+  z-index: 10;
+}
+#loading.done {
+  opacity: 0;
+  pointer-events: none;
+}
+#loading .bar {
+  width: min(320px, 70vw);
+  height: 14px;
+  border: 3px solid var(--paper);
+  border-radius: 99px;
+  overflow: hidden;
+}
+#loading .bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--leaf), var(--ice));
+  transition: width 0.2s;
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+.btn {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 0.7rem 1.4rem;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 1.15rem var(--display);
+  letter-spacing: 0.04em;
+  box-shadow: 0 5px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.08s;
+}
+.btn:hover {
+  transform: translateY(-2px);
+}
+.btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.btn.primary {
+  background: linear-gradient(180deg, #a6f04a, var(--leaf));
+  font-size: 1.5rem;
+}
+.btn + .btn {
+  margin-top: 0.8rem;
+}
+
+.icon-btn {
+  position: fixed;
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: rgba(16, 36, 15, 0.55);
+  color: var(--paper);
+  font-size: 1.1rem;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+.mute-btn {
+  top: calc(12px + var(--safe-t));
+  right: calc(12px + var(--safe-r));
+  z-index: 5;
+}
+.mute-btn.muted {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+.pause-btn {
+  top: calc(12px + var(--safe-t));
+  right: calc(64px + var(--safe-r));
+  font-size: 0.8rem;
+}
+
+/* ---------------------------------------------------------------- screens */
+
+.screen {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.5s,
+    visibility 0.5s;
+}
+.screen.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.title {
+  overflow: hidden;
+}
+.title-art {
+  position: absolute;
+  inset: -3%;
+  background: var(--art-wide) 60% 35% / cover no-repeat;
+  animation: drift 30s ease-in-out infinite alternate;
+}
+.title::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(10, 20, 10, 0.75), rgba(10, 20, 10, 0.1) 55%, transparent);
+  pointer-events: none;
+}
+/* The hero flies in the open sunburst the key art leaves for it (about 69% across, 35% down). */
+.title-hero {
+  position: absolute;
+  left: 69%;
+  top: 37%;
+  width: min(30vw, 56vh, 560px);
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 22px rgba(255, 214, 140, 0.5)) drop-shadow(0 18px 30px rgba(40, 10, 0, 0.35));
+  animation: hover 3.2s ease-in-out infinite;
+  z-index: 1;
+}
+.title-panel {
+  position: absolute;
+  left: calc(5vw + var(--safe-l));
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(520px, 46vw);
+  display: grid;
+  gap: 1rem;
+  z-index: 2;
+}
+.title-logo {
+  width: 100%;
+  filter: drop-shadow(0 8px 0 rgba(0, 0, 0, 0.35));
+  animation: pop-in 0.8s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.title .btn {
+  width: min(280px, 100%);
+}
+.best {
+  margin: 0;
+  font: 1rem var(--display);
+  color: var(--gold);
+  text-shadow: 0 2px 0 var(--ink);
+}
+.controls {
+  margin: 0;
+  font-weight: 600;
+  opacity: 0.85;
+  text-shadow: 0 1px 2px var(--ink);
+}
+
+/* Short landscape screens (phones on their side): a more compact logo column. */
+@media (max-height: 500px) and (min-aspect-ratio: 1/1) {
+  .title-panel {
+    width: min(400px, 42vw);
+    gap: 0.5rem;
+  }
+  .title-logo {
+    width: min(100%, 62vh);
+  }
+  .title .btn {
+    min-height: 44px;
+    padding-block: 0.4rem;
+  }
+  .controls {
+    font-size: 0.8rem;
+  }
+}
+
+/*
+ * Portrait: its own key art, composed for this layout. The hero sits in the open sky, framed by the sunburst
+ * (which lands about 30% down the art) and the goldfish closing in from both edges; logo, Play and the control hint
+ * stack up over the dark foliage at the bottom.
+ */
+@media (max-aspect-ratio: 1/1), (max-width: 700px) {
+  .title-art {
+    background-image: var(--art-tall);
+    background-position: center 30%;
+  }
+  .title-hero {
+    top: 30%;
+    left: 50%;
+    width: min(72vw, 36vh, 440px);
+  }
+  .title-panel {
+    left: 50%;
+    top: auto;
+    bottom: calc(4vh + var(--safe-b));
+    transform: translateX(-50%);
+    width: min(440px, 86vw);
+    gap: min(2vh, 1rem);
+    justify-items: center;
+    text-align: center;
+  }
+  .title-logo {
+    width: min(100%, 44vh);
+  }
+  .controls {
+    font-size: 0.9rem;
+  }
+  .title::after {
+    background: linear-gradient(0deg, rgba(8, 18, 8, 0.85), rgba(8, 18, 8, 0.35) 38%, transparent 55%);
+  }
+}
+
+.pause,
+.over {
+  display: grid;
+  place-items: center;
+  background: rgba(8, 20, 10, 0.6);
+  backdrop-filter: blur(4px);
+}
+.card {
+  width: min(360px, 88vw);
+  padding: 1.6rem;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #24502b, #173a1e);
+  box-shadow: 0 10px 0 var(--ink);
+  text-align: center;
+}
+.card h2 {
+  margin: 0 0 1rem;
+  font: 2rem var(--display);
+  color: var(--leaf);
+  text-shadow: 0 3px 0 var(--ink);
+}
+.card p {
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+.card b {
+  font: 1.8rem var(--display);
+  color: var(--gold);
+}
+.card .boss {
+  width: 130px;
+  margin-top: -80px;
+  animation: hover 2.4s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------- hud */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.4s;
+  font-family: var(--display);
+  text-shadow: 0 2px 0 var(--ink);
+}
+.hud.visible {
+  opacity: 1;
+}
+.hud-left {
+  position: absolute;
+  top: calc(14px + var(--safe-t));
+  left: calc(16px + var(--safe-l));
+}
+.hud-centre {
+  position: absolute;
+  top: calc(14px + var(--safe-t));
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.1rem;
+}
+.hud-right {
+  position: absolute;
+  top: calc(64px + var(--safe-t));
+  right: calc(16px + var(--safe-r));
+  text-align: right;
+}
+.score {
+  font-size: 1.9rem;
+  color: var(--paper);
+}
+.combo {
+  color: var(--gold);
+  font-size: 0.95rem;
+}
+.hearts {
+  display: flex;
+  gap: 4px;
+}
+.heart {
+  width: 26px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.35);
+  clip-path: path('M13 23 C 4 16 0 11 0 6.5 A6.5 6.5 0 0 1 13 4 A6.5 6.5 0 0 1 26 6.5 C 26 11 22 16 13 23 Z');
+}
+.heart.full {
+  background: linear-gradient(180deg, #ff6b6b, var(--bandana));
+}
+.bombs {
+  display: flex;
+  gap: 2px;
+  margin-top: 6px;
+}
+.bombs img {
+  width: 26px;
+}
+.upgrades {
+  position: absolute;
+  bottom: calc(14px + var(--safe-b));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+.chip {
+  display: grid;
+  justify-items: center;
+  opacity: 0.35;
+  filter: grayscale(1);
+  transition: 0.3s;
+}
+.chip.owned {
+  opacity: 1;
+  filter: none;
+}
+.chip img {
+  width: 40px;
+}
+.pips {
+  font-size: 0.55rem;
+  letter-spacing: 1px;
+  color: var(--ice);
+}
+
+.banner {
+  position: fixed;
+  top: 26%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+}
+.banner strong {
+  display: block;
+  font: clamp(2.4rem, 8vw, 5rem) var(--display);
+  color: var(--leaf);
+  -webkit-text-stroke: 3px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 6px 0 var(--ink);
+}
+.banner span {
+  font: 1.1rem var(--display);
+  text-shadow: 0 2px 0 var(--ink);
+}
+.banner.show {
+  animation: banner 2.2s ease both;
+}
+
+.toast {
+  position: fixed;
+  bottom: calc(84px + var(--safe-b));
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 8px 8px;
+  border: 3px solid var(--ink);
+  border-radius: 99px;
+  background: var(--paper);
+  color: var(--ink);
+  transform: translate(-50%, 20px);
+  opacity: 0;
+  transition: 0.25s cubic-bezier(0.2, 1.6, 0.4, 1);
+  pointer-events: none;
+}
+.toast.show {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+.toast img {
+  width: 44px;
+}
+.toast strong {
+  display: block;
+  font: 1rem var(--display);
+}
+.toast span {
+  font-size: 0.85rem;
+}
+/* Phones: a compact pill under the score, just icon + name, so it never covers the action. */
+@media (max-width: 700px), (max-height: 500px) {
+  .toast {
+    top: calc(52px + var(--safe-t));
+    bottom: auto;
+    gap: 6px;
+    padding: 3px 12px 3px 3px;
+    border-width: 2px;
+    transform: translate(-50%, -12px);
+  }
+  .toast img {
+    width: 26px;
+  }
+  .toast strong {
+    font-size: 0.75rem;
+  }
+  .toast span {
+    display: none;
+  }
+}
+
+.popup {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font: 1.1rem var(--display);
+  color: var(--gold);
+  text-shadow: 0 2px 0 var(--ink);
+  animation: float-up 0.9s ease-out forwards;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- touch */
+
+.touch-buttons {
+  display: none;
+}
+.is-touch .touch-buttons.visible {
+  display: block;
+}
+.touch-btn {
+  position: fixed;
+  width: 72px;
+  height: 72px;
+  border: 3px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(16, 36, 15, 0.45);
+  color: var(--paper);
+  font: 0.85rem var(--display);
+  backdrop-filter: blur(6px);
+  touch-action: none;
+}
+.touch-btn:active {
+  background: rgba(159, 243, 255, 0.5);
+}
+.touch-btn.dash {
+  right: calc(18px + var(--safe-r));
+  bottom: calc(96px + var(--safe-b));
+}
+.touch-btn.bomb {
+  right: calc(18px + var(--safe-r));
+  bottom: calc(14px + var(--safe-b));
+}
+.touch-btn img {
+  width: 44px;
+}
+/* Phones: smaller buttons tucked into the bottom-right corner, under the resting thumb. */
+@media (max-width: 700px), (max-height: 500px) {
+  .touch-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 0.75rem;
+  }
+  .touch-btn.dash {
+    bottom: calc(80px + var(--safe-b));
+  }
+  .touch-btn img {
+    width: 36px;
+  }
+}
+.is-touch .upgrades {
+  bottom: calc(8px + var(--safe-b));
+}
+.is-touch .upgrades img {
+  width: 30px;
+}
+
+.stick {
+  position: fixed;
+  left: -60px;
+  top: -60px;
+  width: 120px;
+  height: 120px;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: rgba(16, 36, 15, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.stick.active {
+  opacity: 1;
+}
+.stick-right {
+  border-color: rgba(159, 243, 255, 0.85);
+}
+.stick-knob {
+  position: absolute;
+  left: 32px;
+  top: 32px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.coach {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.6s;
+  pointer-events: none;
+  font-weight: 600;
+  text-shadow: 0 2px 3px var(--ink);
+}
+.coach.show {
+  opacity: 1;
+}
+.coach b {
+  font-family: var(--display);
+  font-weight: normal;
+  color: var(--ice);
+}
+.coach-centre {
+  position: absolute;
+  bottom: calc(80px + var(--safe-b));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+.coach-left,
+.coach-right {
+  position: absolute;
+  bottom: calc(9% + var(--safe-b));
+  width: 50%;
+  text-align: center;
+  font-size: 1.2rem;
+}
+.coach-left {
+  left: 0;
+}
+.coach-right {
+  right: 0;
+}
+.coach-left::before,
+.coach-right::before {
+  content: '';
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 8px;
+  border: 3px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+}
+.coach-right::before {
+  border-color: var(--ice);
+}
+
+/* Narrow portrait phones: the wave counter moves under the hearts and the hints make room for the buttons. */
+@media (max-width: 500px) {
+  .hud-centre {
+    top: calc(74px + var(--safe-t));
+    left: calc(16px + var(--safe-l));
+    transform: none;
+    font-size: 0.8rem;
+  }
+  .heart {
+    scale: 0.85;
+    margin-right: -3px;
+  }
+  .coach-left,
+  .coach-right {
+    font-size: 1rem;
+    width: calc(50% - 40px);
+  }
+  .coach-right {
+    right: calc(80px + var(--safe-r));
+  }
+}
+/* ---------------------------------------------------------------- motion */
+
+@keyframes drift {
+  from {
+    transform: scale(1.04) translate(-1%, 0);
+  }
+  to {
+    transform: scale(1.1) translate(1%, -1%);
+  }
+}
+@keyframes hover {
+  50% {
+    translate: 0 -14px;
+  }
+}
+@keyframes pop-in {
+  from {
+    transform: scale(0.6) rotate(-6deg);
+    opacity: 0;
+  }
+}
+@keyframes banner {
+  0% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+@keyframes float-up {
+  to {
+    transform: translate(-50%, -180%);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-art,
+  .title-hero,
+  .card .boss {
+    animation: none;
+  }
+}

@@ -1,18 +1,53 @@
-# TMNP
+# Teenage Mutant Ninja Parrots
 
-A Phaser 4 + TypeScript game, built with Vite and deployed to Cloudflare Workers static assets.
+A ninja parrot defends the jungle from an invading goldfish army of tanks, planes and helicopters. It's a 3D
+twin-stick shooter built with three.js, TypeScript and Vite, and deployed to Cloudflare Workers static assets.
 
 ## Usage
 
 Requires Node >= 20.19.
 
 - `npm install`
-- `npm run dev` – local dev server (http://localhost:5173)
-- `npm run build` – typecheck and build to `dist/`
-- `npm run lint` – ESLint (flat config) + Prettier
-- `npm run deploy` – build and `wrangler deploy` (config in `wrangler.jsonc`)
+- `npm run dev` starts the dev server. It also listens on your local network, so open the **Network** URL it prints
+  on an iPad or phone on the same Wi-Fi.
+- `npm run build` typechecks and builds to `dist/`.
+- `npm run lint` runs ESLint (flat config) with Prettier.
+- `npm run deploy` builds and runs `wrangler deploy` (config in `wrangler.jsonc`).
 
-Static files (sprites, sounds) live in `public/assets`.
+## Controls
+
+Moving and aiming are separate on every device. The parrot spits ice bubbles from its beak, and each one carries the
+parrot's momentum. Let go of movement and the parrot quickly glides to a hover, so you can turn and pick your target.
+
+| | Mouse | Keyboard | Gamepad | iPad / iPhone |
+| --- | --- | --- | --- | --- |
+| Fly | Hold right button to fly towards the cursor | WASD / arrows | Left stick | Left thumb, anywhere on the left half |
+| Aim | The parrot faces the cursor | Faces the way you fly | Right stick | Right thumb, anywhere on the right half |
+| Fire | Hold left button | Hold Space | Right stick, RT or A | Holding the right thumb (tap to fire ahead) |
+| Dash | | Shift | B / LB | Dash button |
+| Frost bomb | | E / Q | Y / RB | Bomb button |
+| Pause / mute | | Esc / M | Start | ❚❚ / ♪ buttons |
+
+Sticks and touch get a gentle aim nudge of about 7° towards goldfish. Mouse aim has no assist.
+
+<details>
+<summary>Hidden techniques (spoilers, never explained in game)</summary>
+
+- **Flick:** reverse your movement right as a dash ends, in a window from 0.06s before the end to 0.08s after.
+  You barrel-roll into a faster dash the other way, and the dash recharges almost at once. You can chain up to three.
+  Reversing too early spoils it.
+- **Graze:** let a goldfish bubble skim past you mid-dash. Time slows briefly, your dash refunds, and you fire twice
+  as fast for 1.6s, with your shots turning gold.
+
+Tuning lives at the top of `src/game/game.ts`.
+
+</details>
+
+## Art and audio
+
+Art, music and sound effects are generated with Replicate from the original sprites. See
+[docs/style-guide.md](docs/style-guide.md) for the art direction, the goldfish rules and how to regenerate assets.
+`public/assets/sounds/boom.wav` is the original explosion sound and always stays.
 
 ## Extensions
 
